@@ -1,0 +1,27 @@
+---
+- name: Install and configure web server stack
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Install Apache web server
+      ansible.builtin.package:
+        name: apache2      # Use "httpd" for CentOS/RHEL
+        state: present
+
+    - name: Install MySQL server
+      ansible.builtin.package:
+        name: mysql-server
+        state: present
+
+    - name: Install Nginx
+      ansible.builtin.package:
+        name: nginx
+        state: present
+
+    - name: Start and enable Apache service
+      ansible.builtin.service:
+        name: apache2      # Use "httpd" for CentOS/RHEL
+        state: started
+        enabled: yes
+

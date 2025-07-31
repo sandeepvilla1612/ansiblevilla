@@ -1,0 +1,13 @@
+---
+- name: Install httpd only on Linux systems
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Install httpd if OS is Linux (RedHat/CentOS/Amazon)
+      yum:
+        name: httpd
+        state: present
+      when: ansible_os_family == "RedHat"
+

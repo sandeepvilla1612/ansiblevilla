@@ -1,0 +1,65 @@
+---
+- name: Install and Configure Jenkins on Ubuntu
+  hosts: all
+  become: yes
+
+  vars:
+    jenkins_port: 8080
+
+  tasks:
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required Java version
+      apt:
+        name: openjdk-11-jdk
+        state: present
+
+    - name: Add Jenkins key
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
+
+    - name: Add Jenkins repo
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian-stable binary/
+        state: present
+
+    - name: Update apt again
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Check if port 8080 is in use
+      shell: "lsof -i:{{ jenkins_port }}"
+      register: port_check
+      ignore_errors: yes
+
+    - name: Fail if port 8080 is in use
+      fail:
+        msg: "Port {{ jenkins_port }} is already in use!"
+      when: port_check.rc == 0
+
+    - name: Start and enable Jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Allow Jenkins port in firewall (optional)
+      ufw:
+        rule: allow
+        port: "{{ jenkins_port }}"
+        proto: tcp
+      when: ansible_facts['distribution'] == "Ubuntu"
+
+    - name: Display initial Jenkins password path
+      debug:
+        msg: "Unlock Jenkins with password in: /var/lib/jenkins/secrets/initialAdminPassword"
+

@@ -1,0 +1,82 @@
+---
+- name: Server setup and configuration
+  hosts: all
+  become: true
+  vars:
+    swap_file_path: /swapfile
+    swap_file_size: 1G
+    ssh_key_path: /home/{{ ansible_user }}/.ssh/id_rsa
+    firewall_allowed_ports:
+      - 22
+      - 80
+      - 443
+
+  tasks:
+
+    - name: Display Ansible facts
+      ansible.builtin.debug:
+        var: ansible_facts
+
+    - name: Check disk space
+      ansible.builtin.command: df -h
+      register: disk_space
+
+    - name: Show disk space
+      ansible.builtin.debug:
+        var: disk_space.stdout_lines
+
+    - name: Create swap file
+      ansible.builtin.command: fallocate -l {{ swap_file_size }} {{ swap_file_path }}
+      args:
+        creates: "{{ swap_file_path }}"
+
+    - name: Set swap file permissions
+      ansible.builtin.file:
+        path: "{{ swap_file_path }}"
+        owner: root
+        group: root
+        mode: '0600'
+
+    - name: Format swap file
+      ansible.builtin.command: mkswap {{ swap_file_path }}
+      when: swap_file_path is defined
+
+    - name: Enable swap file
+      ansible.builtin.command: swapon {{ swap_file_path }}
+      when: swap_file_path is defined
+
+    - name: Persist swap file in /etc/fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "{{ swap_file_path }} none swap sw 0 0"
+        state: present
+
+    - name: Generate SSH key pair
+      community.crypto.openssh_keypair:
+        path: "{{ ssh_key_path }}"
+        type: rsa
+        size: 2048
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0600'
+      become: false
+
+    - name: Install UFW (Uncomplicated Firewall)
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Allow SSH, HTTP, and HTTPS through UFW
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop: "{{ firewall_allowed_ports }}"
+      when: ansible_os_family == 'Debian'
+
+    - name: Enable UFW
+      ansible.builtin.ufw:
+        state: enabled
+        policy: deny
+      when: ansible_os_family == 'Debian'
+

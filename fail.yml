@@ -1,0 +1,15 @@
+---
+- name: Run a script and fail based on custom output
+  hosts: all
+  become: true
+  tasks:
+    - name: Run a shell script
+      shell: /path/to/your/script.sh
+      register: script_output
+      failed_when: "'ERROR' in script_output.stdout"
+      ignore_errors: false
+
+    - name: Print script output
+      debug:
+        var: script_output.stdout
+

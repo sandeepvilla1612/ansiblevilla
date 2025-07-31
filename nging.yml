@@ -1,0 +1,32 @@
+---
+- name: Setup Nginx as a Reverse Proxy
+  hosts: all
+  become: yes
+ 
+  vars:
+    app_port: 3000  # Backend app port
+    nginx_proxy_file: /etc/nginx/sites-available/reverse-proxy
+ 
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+ 
+    - name: Create Nginx reverse proxy config
+      copy:
+        dest: "{{ nginx_proxy_file }}"
+        content: |
+          server {
+              listen 8080;
+              server_name _;
+ 
+              location / {
+                  proxy_pass http://localhost:{{ app_port }};
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+              }

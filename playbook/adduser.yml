@@ -1,0 +1,23 @@
+---
+- name: Create a new user and add to a group
+  hosts: webservers
+  become: true  # Run as root
+
+  vars:
+    username: johndoe
+    groupname: developers
+
+  tasks:
+    - name: Ensure group exists
+      group:
+        name: "{{ groupname }}"
+        state: present
+
+    - name: Create user and add to group
+      user:
+        name: "{{ username }}"
+        groups: "{{ groupname }}"
+        append: yes
+        shell: /bin/bash
+        state: present
+

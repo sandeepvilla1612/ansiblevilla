@@ -1,0 +1,41 @@
+- name: Manage files and directories on remote hosts
+  hosts: all
+  become: yes
+  tasks:
+
+    - name: Create the user and group if not exists
+      ansible.builtin.user:
+        name: myuser
+        state: present
+
+    - name: Create a directory
+      file:
+        path: /opt/my_directory
+        state: directory
+        mode: '0755'
+        owner: myuser
+        group: myuser
+
+    - name: Change ownership of the directory recursively
+      file:
+        path: /opt/my_directory
+        owner: myuser
+        group: myuser
+        recurse: yes
+        state: directory
+
+    - name: Set permissions on the directory recursively
+      file:
+        path: /opt/my_directory
+        mode: '0750'
+        recurse: yes
+        state: directory
+
+    - name: Copy a file to remote hosts
+      copy:
+        src: /root/sample.txt  # Must exist on your Ansible controller
+        dest: /opt/my_directory/sample.txt
+        owner: myuser
+        group: myuser
+        mode: '0644'
+

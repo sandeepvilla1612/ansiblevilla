@@ -1,0 +1,62 @@
+---
+- name: Manage system packages, networking, and reboot
+  hosts: webservers
+  become: true
+
+  tasks:
+
+    - name: Install package using APT (Debian/Ubuntu)
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install package using YUM (RHEL/CentOS)
+      yum:
+        name: curl
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Remove a package 
+      package:
+        name: lvm2
+        state: absent
+
+    - name: Configure static IP address (Ubuntu example)
+      copy:
+        dest: /etc/netplan/01-static.yaml
+        content: |
+          network:
+            version: 2
+            renderer: networkd
+            ethernets:
+              eth0:
+                dhcp4: no
+                addresses: [192.168.1.100/24]
+                gateway4: 192.168.1.1
+                nameservers:
+                  addresses: [8.8.8.8, 8.8.4.4]
+      notify: Apply netplan
+      when: ansible_os_family == "Debian"
+
+    - name: Update all packages (APT)
+      apt:
+        upgrade: dist
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Update all packages (YUM)
+      yum:
+        name: '*'
+        state: latest
+      when: ansible_os_family == "RedHat"
+
+    - name: Reboot the server
+      reboot:
+        reboot_timeout: 300
+
+  handlers:
+    - name: Apply netplan
+      command: netplan apply
+

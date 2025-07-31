@@ -1,0 +1,38 @@
+---
+- name: File and directory management tasks
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Create a directory
+      file:
+        path: /opt/demo_dir
+        state: directory
+        mode: '0755'
+
+    - name: Change ownership of the directory
+      file:
+        path: /opt/demo_dir
+        owner: johndoe
+        group: developers
+        recurse: yes
+
+    - name: Set permissions on the directory
+      file:
+        path: /opt/demo_dir
+        mode: '0770'
+        recurse: yes
+
+    - name: Copy a file to remote hosts
+      copy:
+        src: /home/ansible/demo.txt      # Local path on control node
+        dest: /opt/demo_dir/demo.txt     # Destination on remote host
+        mode: '0644'
+        owner: johndoe
+        group: developers
+
+    - name: Delete a file from remote hosts
+      file:
+        path: /opt/demo_dir/demo.txt
+        state: absent
+
