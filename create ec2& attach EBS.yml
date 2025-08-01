@@ -1,0 +1,52 @@
+---
+- name: Launch EC2 instance and attach EBS volume
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        aws_access_key: AKIAZF5CWUIEXY7ENPKQ
+        aws_secret_key: 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
+        region: us-east-2
+
+        name: test-instance
+        key_name: sri
+        instance_type: t2.micro
+        image_id: ami-0d1b5a8c13042c939
+        wait: true
+        count: 1
+        network:
+          subnet_id: subnet-07c3230b2dab206f0
+          assign_public_ip: true
+          security_group_id: sg-0de3ab3bbff2fb2bf
+        tags:
+          Name: Ansible-Instance
+      register: ec2_result
+
+    - name: Create EBS volume
+      amazon.aws.ec2_vol:
+        aws_access_key: AKIAZF5CWUIEXY7ENPKQ
+        aws_secret_key: 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
+        region: us-east-2
+
+        zone: "{{ ec2_result.instances[0].placement.availability_zone }}"
+        volume_size: 8
+        volume_type: gp2
+        state: present
+        tags:
+          Name: Ansible-EBS
+      register: ebs_volume
+
+    - name: Attach EBS volume to instance
+      amazon.aws.ec2_vol:
+        aws_access_key: AKIAZF5CWUIEXY7ENPKQ
+        aws_secret_key: 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
+        region: us-east-2
+
+        instance: "{{ ec2_result.instances[0].instance_id }}"
+        id: "{{ ebs_volume.volume_id }}"
+        device_name: /dev/xvdf
+        state: present
